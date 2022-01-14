@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2021 Mamoe Technologies and contributors.
+ * Copyright 2019-2022 Mamoe Technologies and contributors.
  *
- *  此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- *  Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
+ * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
+ * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- *  https://github.com/mamoe/mirai/blob/master/LICENSE
+ * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 
 @file:Suppress("EXPERIMENTAL_API_USAGE", "EXPERIMENTAL_OVERRIDE", "INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
@@ -28,6 +28,7 @@ import net.mamoe.mirai.internal.utils.io.serialization.toByteArray
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.MessageSource
 import net.mamoe.mirai.message.data.OnlineMessageSource
+import net.mamoe.mirai.message.data.visitor.MessageVisitor
 import net.mamoe.mirai.utils.toLongUnsigned
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -93,6 +94,10 @@ internal class OnlineMessageSourceToFriendImpl(
     override var isRecalledOrPlanned: AtomicBoolean = AtomicBoolean(false)
     private val jceData: ImMsgBody.SourceMsg by lazy { toJceDataImpl(subject) }
     override fun toJceData(): ImMsgBody.SourceMsg = jceData
+
+    override fun <D, R> accept(visitor: MessageVisitor<D, R>, data: D): R {
+        return super<OutgoingMessageSourceInternal>.accept(visitor, data)
+    }
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
@@ -120,6 +125,10 @@ internal class OnlineMessageSourceToStrangerImpl(
     override var isRecalledOrPlanned: AtomicBoolean = AtomicBoolean(false)
     private val jceData: ImMsgBody.SourceMsg by lazy { toJceDataImpl(subject) }
     override fun toJceData(): ImMsgBody.SourceMsg = jceData
+
+    override fun <D, R> accept(visitor: MessageVisitor<D, R>, data: D): R {
+        return super<OutgoingMessageSourceInternal>.accept(visitor, data)
+    }
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
@@ -146,6 +155,10 @@ internal class OnlineMessageSourceToTempImpl(
     override var isRecalledOrPlanned: AtomicBoolean = AtomicBoolean(false)
     private val jceData: ImMsgBody.SourceMsg by lazy { toJceDataImpl(subject) }
     override fun toJceData(): ImMsgBody.SourceMsg = jceData
+
+    override fun <D, R> accept(visitor: MessageVisitor<D, R>, data: D): R {
+        return super<OutgoingMessageSourceInternal>.accept(visitor, data)
+    }
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
@@ -232,4 +245,8 @@ internal class OnlineMessageSourceToGroupImpl(
     }
 
     override fun toJceData(): ImMsgBody.SourceMsg = jceData
+
+    override fun <D, R> accept(visitor: MessageVisitor<D, R>, data: D): R {
+        return super<OutgoingMessageSourceInternal>.accept(visitor, data)
+    }
 }
