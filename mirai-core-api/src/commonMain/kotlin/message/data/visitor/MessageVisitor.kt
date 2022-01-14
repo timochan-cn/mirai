@@ -14,7 +14,7 @@ import net.mamoe.mirai.utils.MiraiInternalApi
 
 /**
  * @suppress 这是内部 API, 请不要调用
- * @since MESSAGE_VISITOR
+ * @since 2.11
  */
 @MiraiInternalApi
 public interface MessageVisitor<in D, out R> {
@@ -27,6 +27,10 @@ public interface MessageVisitor<in D, out R> {
 
     public fun visitMessageChain(messageChain: MessageChain, data: D): R {
         return visitMessage(messageChain, data)
+    }
+
+    public fun visitCombinedMessage(message: CombinedMessage, data: D): R {
+        return visitMessageChain(message, data)
     }
 
 

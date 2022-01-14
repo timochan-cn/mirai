@@ -34,24 +34,13 @@ public interface SingleMessage : Message {
 
     @OptIn(MessageChainConstructor::class)
     override fun followedBy(tail: Message): MessageChain {
-        when (tail) {
-            is MessageChain -> {
-                if (this !is MessageMetadata) {
-                    return CombinedMessage(this, tail, MetadataMap(1))
-                }
-            }
-            is SingleMessage -> {
-                @OptIn(MessageChainConstructor::class)
-                return CombinedMessage(
-                    this,
-                    tail,
-                    CombinedMessage.MetadataInfo(
-                        CombinedMessage.MetadataInfo.createMetadataListForSingleMessage(this),
-                        CombinedMessage.MetadataInfo.createMetadataListForSingleMessage(tail)
-                    )
-                )
-            }
-            else -> error("$tail is neither MessageChain nor SingleMessage")
+        var constrainSingleCount = 0
+        if (this.hasConstrainSingle) constrainSingleCount++
+        if (tail.hasConstrainSingle) constrainSingleCount++
+        return if (constrainSingleCount <= 1) {
+            CombinedMessage(this, tail, constrainSingleCount == 1)
+        } else {
+            LinearMessageChainImpl.create(this, tail)
         }
     }
 

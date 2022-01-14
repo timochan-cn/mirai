@@ -12,41 +12,46 @@ package net.mamoe.mirai.message.data
 import net.mamoe.mirai.message.data.visitor.MessageVisitor
 import net.mamoe.mirai.message.data.visitor.RecursiveMessageVisitor
 import net.mamoe.mirai.message.data.visitor.accept
-
-internal class SinglesStorage(
-    private val map: Map<MessageKey<*>, ConstrainSingle>
-) {
-    fun copyPut(single: ConstrainSingle): SinglesStorage {
-        if (single.key !in map) return this
-        return SinglesStorage(map.toMutableMap().apply { put(single.key, single) })
-    }
-
-    fun <D> acceptChildren(visitor: MessageVisitor<D, *>, data: D) {
-        return
-    }
-}
+import net.mamoe.mirai.utils.MiraiInternalApi
 
 /**
  * One after one, hierarchically.
  *
  * @since 2.11
  */
-internal class CombinedMessage @MessageChainConstructor constructor(
-    val element: Message, // must not contain ConstrainSingle
-    val tail: Message, // same as above
-    val singles: SinglesStorage,
+@MiraiInternalApi
+public class CombinedMessage @MessageChainConstructor constructor(
+    @MiraiInternalApi public val element: Message, // must not contain ConstrainSingle
+    @MiraiInternalApi public val tail: Message, // same as above
+    @MiraiInternalApi public override val hasConstrainSingle: Boolean
 ) : MessageChainImpl, List<SingleMessage> {
     override fun <D, R> accept(visitor: MessageVisitor<D, R>, data: D): R {
-        return super.accept(visitor, data)
+        return visitor.visitCombinedMessage(this, data)
     }
 
     override fun <D> acceptChildren(visitor: MessageVisitor<D, *>, data: D) {
-        singles.acceptChildren(visitor, data)
         element.acceptChildren(visitor, data)
         tail.acceptChildren(visitor, data)
     }
 
-    override val size: Int by lazy { element.accept(MessageSizeVisitor()) }
+    override val size: Int by lazy {
+        var size = 0
+        element.accept(object : RecursiveMessageVisitor<Unit>() {
+            override fun visitMessageChain(messageChain: MessageChain, data: Unit) {
+                if (messageChain is DirectSizeAccess) {
+                    size += messageChain.size
+                    return super.visitMessageChain(messageChain, data)
+                }
+                return super.visitMessageChain(messageChain, data)
+            }
+
+            override fun visitSingleMessage(message: SingleMessage, data: Unit) {
+                size++
+            }
+        })
+        size
+    }
+
     override fun isEmpty(): Boolean =
         element is MessageChain && element.isEmpty() && tail is MessageChain && tail.isEmpty()
 
@@ -58,10 +63,6 @@ internal class CombinedMessage @MessageChainConstructor constructor(
         return false
     }
 
-
-    private val slowList: MessageChain by lazy {
-        sequenceOf(element, tail).toMessageChain()
-    }
 
     private val toStringTemp: String by lazy {
         buildString {
@@ -115,11 +116,6 @@ internal class CombinedMessage @MessageChainConstructor constructor(
         return remaining.isEmpty()
     }
 
-    // [MessageChain] implements [RandomAccess] so we should ensure that property here.
-    override fun get(index: Int): SingleMessage = slowList[index]
-    override fun indexOf(element: SingleMessage): Int = slowList.indexOf(element)
-    override fun lastIndexOf(element: SingleMessage): Int = slowList.lastIndexOf(element)
-
     override fun iterator(): Iterator<SingleMessage> {
         suspend fun SequenceScope<SingleMessage>.yieldMessage(element: Message) {
             if (element is SingleMessage) {
@@ -134,9 +130,6 @@ internal class CombinedMessage @MessageChainConstructor constructor(
             yieldMessage(tail)
         }
     }
-
-    override fun listIterator(): ListIterator<SingleMessage> = slowList.listIterator()
-    override fun listIterator(index: Int): ListIterator<SingleMessage> = slowList.listIterator(index)
 
     override fun subList(fromIndex: Int, toIndex: Int): List<SingleMessage> {
         if (fromIndex < 0 || fromIndex > toIndex) throw IndexOutOfBoundsException("fromIndex: $fromIndex, toIndex: $toIndex")
@@ -153,27 +146,24 @@ internal class CombinedMessage @MessageChainConstructor constructor(
             })
         }
     }
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // slow operations
+    ///////////////////////////////////////////////////////////////////////////
+
+    private val slowList: MessageChain by lazy {
+        sequenceOf(element, tail).toMessageChain()
+    }
+
+    // [MessageChain] implements [RandomAccess] so we should ensure that property here.
+    override fun get(index: Int): SingleMessage = slowList[index]
+    override fun indexOf(element: SingleMessage): Int = slowList.indexOf(element)
+    override fun lastIndexOf(element: SingleMessage): Int = slowList.lastIndexOf(element)
+    override fun listIterator(): ListIterator<SingleMessage> = slowList.listIterator()
+    override fun listIterator(index: Int): ListIterator<SingleMessage> = slowList.listIterator(index)
+
 }
 
 internal interface DirectSizeAccess : MessageChain
 internal interface DirectToStringAccess : MessageChain
-
-private class MessageSizeVisitor : MessageVisitor<Unit, Int> {
-    private var size: Int = 0
-
-    override fun visitMessage(message: Message, data: Unit): Int {
-        size++
-        message.acceptChildren(this, data)
-        return size
-    }
-
-    override fun visitMessageChain(messageChain: MessageChain, data: Unit): Int {
-        if (messageChain is DirectSizeAccess) {
-            size += messageChain.size
-            return size
-        }
-        return super.visitMessageChain(messageChain, data)
-    }
-
-    override fun visitSingleMessage(message: SingleMessage, data: Unit): Int = 1
-}

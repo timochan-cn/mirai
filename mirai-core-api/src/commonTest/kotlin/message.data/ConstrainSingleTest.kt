@@ -85,7 +85,8 @@ internal class ConstrainSingleTest {
             last
         )
 
-        val result = sequence.constrainSingleMessages()
+        val (result, has) = ConstrainSingleHelper.constrainSingleMessages(sequence)
+        assertTrue { has }
         assertEquals(result.count(), 1)
         assertSame(result.single(), last)
     }
@@ -100,7 +101,8 @@ internal class ConstrainSingleTest {
             last
         )
 
-        val result = sequence.constrainSingleMessages()
+        val (result, has) = ConstrainSingleHelper.constrainSingleMessages(sequence)
+        assertTrue { has }
         assertEquals(result.count(), 2)
         assertSame(result.first(), last)
     }
