@@ -1,10 +1,10 @@
 /*
- * Copyright 2019-2021 Mamoe Technologies and contributors.
+ * Copyright 2019-2022 Mamoe Technologies and contributors.
  *
- *  此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- *  Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
+ * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
+ * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
  *
- *  https://github.com/mamoe/mirai/blob/master/LICENSE
+ * https://github.com/mamoe/mirai/blob/dev/LICENSE
  */
 
 package net.mamoe.mirai.internal.message.data
@@ -17,7 +17,7 @@ import net.mamoe.mirai.internal.MockBot
 import net.mamoe.mirai.internal.contact.*
 import net.mamoe.mirai.internal.contact.info.GroupInfoImpl
 import net.mamoe.mirai.internal.message.ForwardMessageInternal
-import net.mamoe.mirai.internal.message.OnlineMessageSourceToGroupImpl
+import net.mamoe.mirai.internal.message.source.OnlineMessageSourceToGroupImpl
 import net.mamoe.mirai.internal.network.QQAndroidClient
 import net.mamoe.mirai.internal.network.protocol.data.jce.StTroopNum
 import net.mamoe.mirai.internal.network.protocol.packet.OutgoingPacket
@@ -61,15 +61,19 @@ internal class MessageReceiptTest : AbstractTestWithMiraiImpl() {
                     assertIs<ForwardMessageInternal>(message[ForwardMessageInternal])
                     assertSame(forward, message[ForwardMessageInternal]?.origin)
 
-                    sourceCallback(CompletableDeferred(OnlineMessageSourceToGroupImpl(
-                        group,
-                        internalIds = intArrayOf(1),
-                        sender = bot,
-                        target = group,
-                        time = currentTimeSeconds().toInt(),
-                        originalMessage = message //,
-                        //   sourceMessage = message
-                    )))
+                    sourceCallback(
+                        CompletableDeferred(
+                            OnlineMessageSourceToGroupImpl(
+                                group,
+                                internalIds = intArrayOf(1),
+                                sender = bot,
+                                target = group,
+                                time = currentTimeSeconds().toInt(),
+                                originalMessage = message //,
+                                //   sourceMessage = message
+                            )
+                        )
+                    )
                     listOf()
                 }
         }

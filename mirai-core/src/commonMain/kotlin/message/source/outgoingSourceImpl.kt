@@ -9,7 +9,7 @@
 
 @file:Suppress("EXPERIMENTAL_API_USAGE", "EXPERIMENTAL_OVERRIDE", "INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 
-package net.mamoe.mirai.internal.message
+package net.mamoe.mirai.internal.message.source
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +20,10 @@ import net.mamoe.mirai.Bot
 import net.mamoe.mirai.contact.*
 import net.mamoe.mirai.event.asyncFromEventOrNull
 import net.mamoe.mirai.internal.contact.uin
+import net.mamoe.mirai.internal.message.MessageSourceInternal
+import net.mamoe.mirai.internal.message.MessageSourceSerializerImpl
+import net.mamoe.mirai.internal.message.OutgoingMessageSourceInternal
+import net.mamoe.mirai.internal.message.toRichTextElems
 import net.mamoe.mirai.internal.network.notice.group.GroupMessageProcessor.SendGroupMessageReceipt
 import net.mamoe.mirai.internal.network.protocol.data.proto.ImMsgBody
 import net.mamoe.mirai.internal.network.protocol.data.proto.MsgComm
