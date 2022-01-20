@@ -156,6 +156,20 @@ public interface MessageVisitor<in D, out R> {
  * @since 2.11
  */
 @MiraiInternalApi
+public abstract class RecursiveMessageVisitor<D> : MessageVisitorUnit<D> {
+    protected open fun isFinished(): Boolean = false
+
+    override fun visitMessage(message: Message, data: D) {
+        if (isFinished()) return
+        message.acceptChildren(this, data)
+    }
+}
+
+/**
+ * @suppress 这是内部 API, 请不要调用
+ * @since 2.11
+ */
+@MiraiInternalApi
 public interface MessageVisitorUnit<in D> : MessageVisitor<D, Unit> {
     override fun visitMessage(message: Message, data: D): Unit = Unit
 }

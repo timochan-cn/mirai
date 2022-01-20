@@ -253,11 +253,6 @@ public sealed interface MessageChain :
     @MiraiInternalApi
     override fun <D, R> accept(visitor: MessageVisitor<D, R>, data: D): R = visitor.visitMessageChain(this, data)
 
-    @MiraiInternalApi
-    override fun <D> acceptChildren(visitor: MessageVisitor<D, *>, data: D) {
-        forEach { it.accept(visitor, data) }
-    }
-
     /**
      * 将 [MessageChain] 作为 `List<SingleMessage>` 序列化. 使用 [多态序列化][Polymorphic].
      *
@@ -525,11 +520,8 @@ public inline fun Array<out Message>.toMessageChain(): MessageChain = this.asSeq
 @JvmName("newChain")
 public fun Message.toMessageChain(): MessageChain = when (this) {
     is MessageChain -> (this as List<SingleMessage>).toMessageChain()
-    else -> MessageChainImpl(
-        listOf(
-            this as? SingleMessage ?: error("Message is either MessageChain nor SingleMessage: $this")
-        )
-    )
+    is SingleMessage -> createMessageChainImplOptimized(listOf(this))
+    else -> error("Message is either MessageChain nor SingleMessage: $this")
 }
 
 

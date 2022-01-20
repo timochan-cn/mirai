@@ -67,7 +67,9 @@ internal fun Message.contentEqualsStrictImpl(another: Message, ignoreCase: Boole
 
 @JvmSynthetic
 internal fun Message.followedByImpl(tail: Message): MessageChain {
-    return MessageChainImplBySequence(this.toMessageChain().asSequence() + tail.toMessageChain().asSequence())
+    return createMessageChainImplOptimized(
+        (this.toMessageChain().asSequence() + tail.toMessageChain().asSequence()).constrainSingleMessages()
+    )
     /*
     when {
         this is SingleMessage && tail is SingleMessage -> {
@@ -116,6 +118,9 @@ internal fun Message.followedByImpl(tail: Message): MessageChain {
 internal fun Sequence<SingleMessage>.constrainSingleMessages(): List<SingleMessage> =
     constrainSingleMessagesImpl(this)
 
+internal sealed interface MessageChainImpl : MessageChain {
+}
+
 /**
  * - [Sequence.toMutableList]
  * - Replace in-place with marker null
@@ -160,22 +165,30 @@ internal fun <M : SingleMessage> MessageChain.getImpl(key: MessageKey<M>): M? {
 }
 
 /**
- * @return [EmptyMessageChain] if [delegate] is empty, otherwise [MessageChainImpl]
+ * @return [EmptyMessageChain] if [delegate] is empty, otherwise [LinearMessageChainImpl]
  */
+@OptIn(MessageChainConstructor::class)
 internal fun createMessageChainImplOptimized(delegate: List<SingleMessage>): MessageChain {
     return if (delegate.isEmpty()) emptyMessageChain()
-    else MessageChainImpl(delegate)
+    else LinearMessageChainImpl(delegate)
 }
+
+@RequiresOptIn
+internal annotation class MessageChainConstructor
+
 
 /**
  * 使用 [Collection] 作为委托的 [MessageChain]
+ *
+ * @see createMessageChainImplOptimized
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(MessageChain.Serializer::class)
-internal data class MessageChainImpl constructor(
+internal data class LinearMessageChainImpl @MessageChainConstructor constructor(
     @JvmField
-    internal val delegate: List<SingleMessage> // 必须 constrainSingleMessages, 且为 immutable
-) : Message, MessageChain, List<SingleMessage> by delegate {
+    internal val delegate: List<SingleMessage>
+) : Message, MessageChain, List<SingleMessage> by delegate, MessageChainImpl,
+    DirectSizeAccess, DirectToStringAccess {
     override val size: Int get() = delegate.size
     override fun iterator(): Iterator<SingleMessage> = delegate.iterator()
 
@@ -186,13 +199,8 @@ internal data class MessageChainImpl constructor(
     override fun contentToString(): String = contentToStringTemp
 
     override fun hashCode(): Int = delegate.hashCode()
-    override fun equals(other: Any?): Boolean = other is MessageChainImpl && other.delegate == this.delegate
+    override fun equals(other: Any?): Boolean = other is LinearMessageChainImpl && other.delegate == this.delegate
 }
-
-@Suppress("FunctionName") // source compatibility with 1.x
-internal fun MessageChainImplBySequence(
-    delegate: Sequence<SingleMessage> // 可以有重复 ConstrainSingle
-): MessageChain = createMessageChainImplOptimized(delegate.constrainSingleMessages())
 
 
 //////////////////////
