@@ -240,7 +240,20 @@ public interface Message {
      * @see plus `+` 操作符重载
      */
     @JvmSynthetic // in java they should use `plus` instead
-    public fun followedBy(tail: Message): MessageChain = LinearMessageChainImpl.create(this@Message, tail)
+    public fun followedBy(tail: Message): MessageChain {
+        var constrainSingleCount = 0
+        if (this.hasConstrainSingle) constrainSingleCount++
+        if (tail.hasConstrainSingle) constrainSingleCount++
+        return if (constrainSingleCount == 0) {
+            // Future optimize:
+            // When constrainSingleCount == 1, see if we can connect by CombinedMessage,
+            // this need some kind of replacement of `hasConstrainSingle` with more information about MessageKeys.
+            @OptIn(MessageChainConstructor::class)
+            CombinedMessage(this, tail, false)
+        } else {
+            LinearMessageChainImpl.combineCreate(this, tail)
+        }
+    }
 
     /** 将 [another] 按顺序连接到这个消息的尾部. */
     public operator fun plus(another: MessageChain): MessageChain = this + another as Message

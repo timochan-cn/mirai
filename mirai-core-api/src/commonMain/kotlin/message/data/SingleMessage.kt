@@ -32,18 +32,6 @@ public interface SingleMessage : Message {
     @MiraiInternalApi
     override fun <D, R> accept(visitor: MessageVisitor<D, R>, data: D): R = visitor.visitSingleMessage(this, data)
 
-    @OptIn(MessageChainConstructor::class)
-    override fun followedBy(tail: Message): MessageChain {
-        var constrainSingleCount = 0
-        if (this.hasConstrainSingle) constrainSingleCount++
-        if (tail.hasConstrainSingle) constrainSingleCount++
-        return if (constrainSingleCount <= 1) {
-            CombinedMessage(this, tail, constrainSingleCount == 1)
-        } else {
-            LinearMessageChainImpl.create(this, tail)
-        }
-    }
-
     /**
      * @suppress deprecated since 2.4.0
      */

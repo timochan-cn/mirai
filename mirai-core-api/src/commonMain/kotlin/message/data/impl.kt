@@ -17,6 +17,7 @@ import kotlinx.serialization.Serializable
 import net.mamoe.mirai.message.data.Image.Key.IMAGE_ID_REGEX
 import net.mamoe.mirai.message.data.Image.Key.IMAGE_RESOURCE_ID_REGEX_1
 import net.mamoe.mirai.message.data.Image.Key.IMAGE_RESOURCE_ID_REGEX_2
+import net.mamoe.mirai.message.data.visitor.MessageVisitor
 import net.mamoe.mirai.utils.MiraiInternalApi
 import net.mamoe.mirai.utils.asImmutable
 import net.mamoe.mirai.utils.castOrNull
@@ -65,7 +66,11 @@ internal sealed interface MessageChainImpl : MessageChain {
 }
 
 internal val Message.hasConstrainSingle: Boolean
-    get() = this is ConstrainSingle || this.castOrNull<MessageChainImpl>()?.hasConstrainSingle ?: false
+    get() {
+        if (this is SingleMessage) return this is ConstrainSingle
+        // now `this` is MessageChain
+        return this.castOrNull<MessageChainImpl>()?.hasConstrainSingle ?: true // for external type, assume they do
+    }
 
 /**
  * @see ConstrainSingleHelper.constrainSingleMessages
@@ -145,8 +150,14 @@ internal class LinearMessageChainImpl @MessageChainConstructor private construct
     override fun hashCode(): Int = delegate.hashCode()
     override fun equals(other: Any?): Boolean = other is LinearMessageChainImpl && other.delegate == this.delegate
 
+    override fun <D> acceptChildren(visitor: MessageVisitor<D, *>, data: D) {
+        for (singleMessage in delegate) {
+            singleMessage.accept(visitor, data)
+        }
+    }
+
     companion object {
-        fun create(message: Message, tail: Message): MessageChain {
+        fun combineCreate(message: Message, tail: Message): MessageChain {
             return create(
                 ConstrainSingleHelper.constrainSingleMessages(
                     message.toMessageChain().asSequence() + tail.toMessageChain().asSequence()
